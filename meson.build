@@ -51,6 +51,26 @@ supported_cpus = ['ppc', 'ppc64', 's390x', 'riscv32', 'riscv64', 'x86', 'x86_64'
 cpu = host_machine.cpu_family()
 
 target_dirs = config_host['TARGET_DIRS'].split()
+have_avatar = 'CONFIG_AVATAR' in config_host
+have_linux_user = false
+have_bsd_user = false
+have_system = false
+foreach target : target_dirs
+  have_linux_user = have_linux_user or target.endswith('linux-user')
+  have_bsd_user = have_bsd_user or target.endswith('bsd-user')
+  have_system = have_system or target.endswith('-softmmu')
+endforeach
+have_user = have_linux_user or have_bsd_user
+have_tools = get_option('tools') \
+  .disable_auto_if(not have_system) \
+  .allowed()
+have_ga = get_option('guest_agent') \
+  .disable_auto_if(not have_system and not have_tools) \
+  .require(targetos in ['sunos', 'linux', 'windows', 'freebsd'],
+           error_message: 'unsupported OS for QEMU guest agent') \
+  .allowed()
+have_block = have_system or have_tools
+have_avatar = 'CONFIG_AVATAR' in config_host
 
 ############
 # Programs #
@@ -3978,6 +3998,11 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
+
+  if have_avatar
+    # To link the configurable machine with mqueue.h
+    link_args += ['-lrt']
+  endif
 #### --- Begin LibAFL code ---
   if 'AS_SHARED_LIB' not in config_host and 'AS_STATIC_LIB' not in config_host
 #### --- End LibAFL code ---
@@ -4265,6 +4290,7 @@ summary_info += {'vhost-user-crypto support': have_vhost_user_crypto}
 summary_info += {'vhost-user-blk server support': have_vhost_user_blk_server}
 summary_info += {'vhost-vdpa support': have_vhost_vdpa}
 summary_info += {'build guest agent': have_ga}
+summary_info += {'avatar2 support': config_host.has_key('CONFIG_AVATAR')}
 summary(summary_info, bool_yn: true, section: 'Configurable features')
 
 # Compilation information

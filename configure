@@ -252,6 +252,7 @@ python=
 download="enabled"
 skip_meson=no
 use_containers="yes"
+avatar=yes
 gdb_bin=$(command -v "gdb-multiarch" || command -v "gdb")
 gdb_arches=""
 
@@ -762,6 +763,10 @@ for opt do
   --container-engine=*) container_engine="$optarg"
   ;;
   --gdb=*) gdb_bin="$optarg"
+  ;;
+  --enable-avatar) avatar=yes
+  ;;
+  --disable-avatar) avatar=no
   ;;
 #### --- Begin LibAFL code ---
   --as-shared-lib)

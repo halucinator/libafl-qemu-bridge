@@ -28,6 +28,11 @@
 #include "qemu/module.h"
 #include "trace.h"
 
+
+#ifdef CONFIG_AVATAR
+#include "hw/avatar/interrupts.h"
+#endif
+
 /* IRQ number counting:
  *
  * the num-irq property counts the number of external IRQ lines
@@ -788,6 +793,9 @@ void armv7m_nvic_acknowledge_irq(NVICState *s)
     assert(s->vectpending_prio < running);
 
     trace_nvic_acknowledge_irq(pending, s->vectpending_prio);
+#ifdef CONFIG_AVATAR
+    avatar_armv7m_exception_enter(pending);
+#endif
 
     vec->active = 1;
     vec->pending = 0;
@@ -2345,6 +2353,9 @@ static MemTxResult nvic_sysreg_write(void *opaque, hwaddr addr,
     unsigned i, startvec, end;
     unsigned setval = 0;
 
+#ifdef CONFIG_AVATAR
+    avatar_armv7m_nvic_forward_write(offset, value, size);
+#endif
     trace_nvic_sysreg_write(addr, value, size);
 
     if (attrs.user && !nvic_user_access_ok(s, addr, attrs)) {

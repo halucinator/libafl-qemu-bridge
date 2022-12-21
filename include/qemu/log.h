@@ -4,7 +4,7 @@
 /* A small part of this API is split into its own header */
 #include "qemu/log-for-trace.h"
 
-/* 
+/*
  * The new API:
  */
 
@@ -36,6 +36,7 @@ bool qemu_log_separate(void);
 #define LOG_STRACE         (1 << 19)
 #define LOG_PER_THREAD     (1 << 20)
 #define CPU_LOG_TB_VPU     (1 << 21)
+#define LOG_AVATAR         (1 << 22)
 
 /* Lock/unlock output. */
 
