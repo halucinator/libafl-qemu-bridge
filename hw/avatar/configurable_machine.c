@@ -219,6 +219,7 @@ static void dummy_interrupt(void *opaque, int irq, int level)
 {}
 
 static SysBusDevice *make_configurable_device(const char *qemu_name,
+                                              const char * dev_id,
                                               uint64_t address,
                                               QList *properties)
 {
@@ -231,9 +232,10 @@ static SysBusDevice *make_configurable_device(const char *qemu_name,
     /* replace the result of: dev = qdev_create(NULL, qemu_name); */
 
     dev = qdev_new(qemu_name);
-    
-    /* this is a sysbus device. 
-     * QEMU no longer attaches devices to this automatically; 
+    dev->id = g_strdup(dev_id);
+
+    /* this is a sysbus device.
+     * QEMU no longer attaches devices to this automatically;
      * we will need to give it a helping hand. */
     //qdev_set_parent_bus(dev, sysbus);
     //dev->realized = true;
@@ -248,6 +250,7 @@ static SysBusDevice *make_configurable_device(const char *qemu_name,
 
     return s;
 }
+
 
 static off_t get_file_size(const char * path)
 {
@@ -426,7 +429,7 @@ static void init_peripheral(QDict *device)
     address = qdict_get_int(device, "address");
     name = qdict_get_str(device, "name");
 
-    printf("Configurable: Adding peripheral[%s] region %s at address 0x%" PRIx64 "\n", 
+    printf("Configurable: Adding peripheral[%s] region %s at address 0x%" PRIx64 "\n",
             qemu_name, name, address);
     if (strcmp(bus, "sysbus") == 0)
     {
@@ -439,8 +442,8 @@ static void init_peripheral(QDict *device)
             properties = qobject_to(QList, qdict_get(device, "properties"));
         }
 
-        sb = make_configurable_device(qemu_name, address, properties);
-        
+        sb = make_configurable_device(qemu_name, name, address, properties);
+
         printf("Added %s to peripherals, Dict %p, device %p\n", name, peripherals, sb);
         qdict_put_obj(peripherals, name, (QObject *)sb);
         printf("Added %s to peripherals\n", name);
@@ -492,7 +495,7 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
 
 #if defined(TARGET_ARM) || defined(TARGET_I386) || defined(TARGET_MIPS)
     ObjectClass *cpu_oc;
-    
+
 #endif  /* TARGET_ARM || TARGET_I386 || TARGET_MIPS */
 
 #if defined(TARGET_ARM) && !defined(TARGET_AARCH64)
@@ -525,16 +528,16 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
         if (qdict_haskey(conf, "num_irq")) {
             num_irq = qdict_get_int(conf, "num_irq");
             g_assert(num_irq);
-        } 
+        }
         sysclk = clock_new(OBJECT(ms), "SYSCLK");
         clock_set_hz(sysclk, SYSCLK_FRQ);
         dstate = qdev_new(TYPE_ARMV7M);
         qdev_prop_set_uint32(dstate, "num-irq", num_irq);
         qdev_prop_set_string(dstate, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m3"));
         qdev_connect_clock_in(dstate, "cpuclk", sysclk);
-        object_property_set_link(OBJECT(dstate), "memory", 
+        object_property_set_link(OBJECT(dstate), "memory",
                                  OBJECT(get_system_memory()), &error_abort);
-       
+
         sysbus_realize_and_unref(SYS_BUS_DEVICE(dstate), &error_fatal);
 
         cpuu = ARM_CPU(first_cpu);
@@ -606,7 +609,7 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
 #else
 
     if (strcmp(cpu_type, "cortex-m3")){
-        // TODO: Causes GDB to not connect on arm926 and cortex-m3 
+        // TODO: Causes GDB to not connect on arm926 and cortex-m3
         // (armv7m doesn't have banked registers)
         //avatar_add_banked_registers(cpuu);
     }
@@ -648,7 +651,7 @@ static void connect_irqs(QDict * dev_dict, QDict * periphs){
         QLIST_FOREACH_ENTRY(irq_entries, e){
             QDict * d = (QDict * )e->value;
             if (qdict_haskey(d, "dev")){
-                
+
                 irq_parent = qdict_get_str(d, "dev");
                 printf("Looking for dev %s\n", irq_parent);
                 irq_num = qdict_get_int(d, "irq_num");
@@ -677,7 +680,7 @@ static void board_init(MachineState * ms)
     const char *config_filename = cms->config_filename;
     QDict * conf = NULL;
 
-    
+
 
     if (config_filename == NULL){
         g_assert(0);
@@ -706,7 +709,7 @@ static void board_init(MachineState * ms)
 
         QLIST_FOREACH_ENTRY(memories, entry)
         {
-            
+
             g_assert(qobject_type(entry->value) == QTYPE_QDICT);
             QDict *mapping = qobject_to(QDict, entry->value);
             printf("Initializing %p\n", mapping);
@@ -757,7 +760,7 @@ static void configurable_machine_class_init(ObjectClass *oc, void *data)
     mc->desc = "Machine that can be configured to be whatever you want";
     mc->init = board_init;
     mc->block_default_type = IF_SCSI;
-    object_class_property_add_str(oc, "config-filename", configurable_get_config_filename, 
+    object_class_property_add_str(oc, "config-filename", configurable_get_config_filename,
                                   configurable_set_config_filename);
     object_class_property_set_description(oc, "config-filename",
                                           "Configuration file (.json) used to build machine");
@@ -785,7 +788,7 @@ static const TypeInfo configurable_machine_type = {
     .class_init = configurable_machine_class_init,
     .instance_size = sizeof(ConfigurableMachineState),
     .instance_init = configurable_machine_instance_init,
-        
+
 };
 
 static void configurable_machine_init(void)
