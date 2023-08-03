@@ -37,15 +37,15 @@ static void update_irq(HalucinatorIRQState * s){
     for (i=0; i < s->num_irqs ; i++){
         irq_active = (s->irq_regs[i] & IRQ_N_ACTIVE) && (s->irq_regs[i] & IRQ_N_ENABLED);
         any_irq_active |= irq_active;
-        if (irq_active){
-            printf("IRQ Active %i: %i\n", i, s->irq_regs[i]);
-        }
+        // if (irq_active){
+        //     printf("IRQ Active %i: %i\n", i, s->irq_regs[i]);
+        // }
     }
     if (s->status_reg & GLOBAL_IRQ_ENABLED){
-        printf("QEMU: Setting Global IRQ %d\n", any_irq_active);
+        // printf("QEMU: Setting Global IRQ %d\n", any_irq_active);
         qemu_set_irq(s->irq, any_irq_active);
     }else{
-        printf("Clearing IRQ as global is not active\n");
+        // printf("Clearing IRQ as global is not active\n");
         qemu_set_irq(s->irq, 0);
     }
 }
@@ -57,11 +57,11 @@ static uint64_t halucinator_irqc_read(void *opaque, hwaddr offset,
     uint64_t ret = 0;
     int i;
 
-    printf("Reading Halucinator-IRQ addr 0x%lx: size 0x%x\n", offset, size);
+    // printf("Reading Halucinator-IRQ addr 0x%lx: size 0x%x\n", offset, size);
     HalucinatorIRQState *s = HALUCINATOR_IRQ(opaque);
     if (offset == 0){
         ret = s->status_reg & 0xFFFFFFFF;
-        printf("Read IRQ %li returning 0x%08lx\n",offset, ret);
+        // printf("Read IRQ %li returning 0x%08lx\n",offset, ret);
         update_irq(s);
         return ret;
     }
@@ -70,7 +70,7 @@ static uint64_t halucinator_irqc_read(void *opaque, hwaddr offset,
         for (i=0; i < size; i++){
             ret |= (s->irq_regs[offset - OFFSET_IRQ_N_REGS + i] & 0xFF) << (i * 8);
         }     
-        printf("Read IRQ %li returning 0x%08lx\n",offset - OFFSET_IRQ_N_REGS, ret);
+        // printf("Read IRQ %li returning 0x%08lx\n",offset - OFFSET_IRQ_N_REGS, ret);
         update_irq(s);
         return ret;
     }
@@ -83,7 +83,7 @@ static uint64_t halucinator_irqc_read(void *opaque, hwaddr offset,
 static void halucinator_irqc_write(void *opaque, hwaddr offset,
                         uint64_t value, unsigned size)
 {
-    printf("Writing Halucinator-IRQ 0x%lx: value 0x%08lx size 0x%x\n", offset, value, size);
+    // printf("Writing Halucinator-IRQ 0x%lx: value 0x%08lx size 0x%x\n", offset, value, size);
     HalucinatorIRQState *s = HALUCINATOR_IRQ(opaque);
 
     if (offset == 0){
@@ -94,8 +94,8 @@ static void halucinator_irqc_write(void *opaque, hwaddr offset,
     else if (offset >= OFFSET_IRQ_N_REGS && \
              offset < s->num_irqs + OFFSET_IRQ_N_REGS){
         s->irq_regs[offset - OFFSET_IRQ_N_REGS] = (uint8_t)(value & 0xFF);
-        printf("Set IRQ %li to 0x%02x\n", offset - OFFSET_IRQ_N_REGS, 
-                s->irq_regs[offset - OFFSET_IRQ_N_REGS]);
+        // printf("Set IRQ %li to 0x%02x\n", offset - OFFSET_IRQ_N_REGS, 
+        //         s->irq_regs[offset - OFFSET_IRQ_N_REGS]);
         update_irq(s);
         return;
     }

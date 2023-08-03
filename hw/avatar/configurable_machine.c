@@ -206,6 +206,12 @@ static void set_properties(DeviceState *dev, QList *properties)
             QObject *pr = qdict_get(peripherals, value);
             qdev_prop_set_chr(dev, name, (void *) pr);
         }
+        else if(!strcmp(type, "bool"))
+        {
+            QDICT_ASSERT_KEY_TYPE(property, "value", QTYPE_QNUM);
+            uint32_t value = qdict_get_int(property, "value");
+            qdev_prop_set_bit(dev, name, value);
+        }
     }
 }
 
