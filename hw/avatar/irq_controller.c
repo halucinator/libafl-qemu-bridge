@@ -1,5 +1,5 @@
-// Copyright 2021 National Technology & Engineering Solutions of Sandia, LLC 
-// (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, 
+// Copyright 2021 National Technology & Engineering Solutions of Sandia, LLC
+// (NTESS). Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 
 #include "qemu/osdep.h"
@@ -34,18 +34,21 @@ static void update_irq(HalucinatorIRQState * s){
     int i;
     bool any_irq_active = false;
     bool irq_active = false;
+    printf("Active IRQs: ");
     for (i=0; i < s->num_irqs ; i++){
         irq_active = (s->irq_regs[i] & IRQ_N_ACTIVE) && (s->irq_regs[i] & IRQ_N_ENABLED);
         any_irq_active |= irq_active;
-        // if (irq_active){
-        //     printf("IRQ Active %i: %i\n", i, s->irq_regs[i]);
-        // }
+        if (irq_active){
+             printf("%i, ", i);
+        }
     }
     if (s->status_reg & GLOBAL_IRQ_ENABLED){
         // printf("QEMU: Setting Global IRQ %d\n", any_irq_active);
+        printf("Setting CPU IRQ\n");
         qemu_set_irq(s->irq, any_irq_active);
     }else{
         // printf("Clearing IRQ as global is not active\n");
+        printf("IRQ GLOBAL Not Set\n");
         qemu_set_irq(s->irq, 0);
     }
 }
@@ -57,24 +60,25 @@ static uint64_t halucinator_irqc_read(void *opaque, hwaddr offset,
     uint64_t ret = 0;
     int i;
 
+    // printf("IRQC_READ --- ");
     // printf("Reading Halucinator-IRQ addr 0x%lx: size 0x%x\n", offset, size);
     HalucinatorIRQState *s = HALUCINATOR_IRQ(opaque);
     if (offset == 0){
         ret = s->status_reg & 0xFFFFFFFF;
         // printf("Read IRQ %li returning 0x%08lx\n",offset, ret);
-        update_irq(s);
+        // update_irq(s);
         return ret;
     }
     else if (offset >= OFFSET_IRQ_N_REGS && \
              offset < s->num_irqs + OFFSET_IRQ_N_REGS){
         for (i=0; i < size; i++){
             ret |= (s->irq_regs[offset - OFFSET_IRQ_N_REGS + i] & 0xFF) << (i * 8);
-        }     
+        }
         // printf("Read IRQ %li returning 0x%08lx\n",offset - OFFSET_IRQ_N_REGS, ret);
-        update_irq(s);
+        // update_irq(s);
         return ret;
     }
-    
+
     printf("Invalid Access Returning 0x%08lx\n", ret);
     return ret;
 }
@@ -83,6 +87,7 @@ static uint64_t halucinator_irqc_read(void *opaque, hwaddr offset,
 static void halucinator_irqc_write(void *opaque, hwaddr offset,
                         uint64_t value, unsigned size)
 {
+    printf("IRQC_WRITE --- ");
     // printf("Writing Halucinator-IRQ 0x%lx: value 0x%08lx size 0x%x\n", offset, value, size);
     HalucinatorIRQState *s = HALUCINATOR_IRQ(opaque);
 
@@ -93,13 +98,14 @@ static void halucinator_irqc_write(void *opaque, hwaddr offset,
     }
     else if (offset >= OFFSET_IRQ_N_REGS && \
              offset < s->num_irqs + OFFSET_IRQ_N_REGS){
+        printf("(%li, 0x%02x) ", offset- OFFSET_IRQ_N_REGS, (uint8_t)(value & 0xFF));
         s->irq_regs[offset - OFFSET_IRQ_N_REGS] = (uint8_t)(value & 0xFF);
-        // printf("Set IRQ %li to 0x%02x\n", offset - OFFSET_IRQ_N_REGS, 
+        // printf("Set IRQ %li to 0x%02x\n", offset - OFFSET_IRQ_N_REGS,
         //         s->irq_regs[offset - OFFSET_IRQ_N_REGS]);
         update_irq(s);
         return;
     }
-    
+
     printf("Invalid Access Returning\n");
     return;
 }
@@ -110,12 +116,14 @@ static void irq_handler(void *opaque, int irq, int level)
     struct HalucinatorIRQState *s = HALUCINATOR_IRQ(opaque);
     assert(irq < s->num_irqs);
 
+
+    printf("IRQ_HANDLER --- ");
     if (level){ // Set IRQ Active
-        printf("QEMU: IRQ_HANDLER: Setting IRQ %i ACTIVE\n", irq);
+        // printf("QEMU: IRQ_HANDLER: Setting IRQ %i ACTIVE\n", irq);
         s->irq_regs[irq] |= IRQ_N_ACTIVE;
     }
     else{ //Clear IRQ Active
-        printf("QEMU: IRQ_HANDLER: Clearing IRQ %i\n", irq);
+        // printf("QEMU: IRQ_HANDLER: Clearing IRQ %i\n", irq);
         s->irq_regs[irq] &= ~IRQ_N_ACTIVE;
     }
     update_irq(s);
@@ -125,6 +133,7 @@ static void irq_handler(void *opaque, int irq, int level)
 static void halucinator_irq_clear_irq_setter(Object * obj, Visitor *v, const char *name, void *opaque, Error** errp){
     struct HalucinatorIRQState * s = HALUCINATOR_IRQ(obj);
     int64_t irq_num;
+    printf("IRQ_CLEAR --- ");
     visit_type_int(v, name, &irq_num, errp);
     if(s->irq_regs == NULL){
         return;
@@ -139,6 +148,8 @@ static void halucinator_irq_clear_irq_setter(Object * obj, Visitor *v, const cha
 static void halucinator_irq_set_irq_setter(Object * obj, Visitor *v, const char *name, void *opaque, Error** errp){
     struct HalucinatorIRQState * s = HALUCINATOR_IRQ(obj);
     int64_t irq_num;
+
+    printf("IRQ_SET --- ");
     visit_type_int(v, name, &irq_num, errp);
     if(s->irq_regs == NULL){
         return;
@@ -153,6 +164,7 @@ static void halucinator_irq_set_irq_setter(Object * obj, Visitor *v, const char 
 static void halucinator_irq_enable_irq_setter(Object * obj, Visitor *v, const char *name, void *opaque, Error** errp){
     struct HalucinatorIRQState * s = HALUCINATOR_IRQ(obj);
     int64_t irq_num;
+    printf("IRQ_ENABLE --- ");
     visit_type_int(v, name, &irq_num, errp);
     if(s->irq_regs == NULL){
         return;
@@ -167,6 +179,7 @@ static void halucinator_irq_enable_irq_setter(Object * obj, Visitor *v, const ch
 static void halucinator_irq_disable_irq_setter(Object * obj, Visitor *v, const char *name, void *opaque, Error** errp){
     struct HalucinatorIRQState * s = HALUCINATOR_IRQ(obj);
     int64_t irq_num;
+    printf("IRQ_DISABLE --- ");
     visit_type_int(v, name, &irq_num, errp);
     if(s->irq_regs == NULL){
         return;
@@ -198,7 +211,7 @@ static void halucinator_irq_realize(DeviceState *dev, Error **errp)
 
     SysBusDevice *sbd = SYS_BUS_DEVICE(s);
     sysbus_init_irq(sbd, &s->irq);
-    memory_region_init_io(&s->iomem, OBJECT(s), &halucinator_irq_ops, s, 
+    memory_region_init_io(&s->iomem, OBJECT(s), &halucinator_irq_ops, s,
                           "halucinator-irq", s->num_irqs+OFFSET_IRQ_N_REGS);
     sysbus_init_mmio(sbd, &s->iomem);
     s->status_reg = 0;
