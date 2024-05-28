@@ -360,6 +360,7 @@ else
   # be the result of a missing compiler.
   host_os=bogus
 fi
+echo "recognized host_os '$host_os'"
 
 if test ! -z "$cpu" ; then
   # command line argument
@@ -1635,6 +1636,10 @@ echo "EXESUF=$EXESUF" >> $config_host_mak
 if test "$default_targets" = "yes"; then
   echo "CONFIG_DEFAULT_TARGETS=y" >> $config_host_mak
 fi
+if test "$avatar" = "yes"; then
+    echo "CONFIG_AVATAR=y" >> $config_host_mak
+fi
+
 
 #### --- Begin LibAFL code ---
 if test "$as_shared_lib" = "yes" ; then
