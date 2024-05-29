@@ -121,7 +121,8 @@ int qemu_avatar_mq_receive(QemuAvatarMessageQueue *mq, void *buffer, size_t len)
 
       tm.tv_sec += 1;
 
-      int rc = mq_timedreceive(mq->mq, buffer, len, NULL, &tm);
+      //fix warning shadowed variable
+      rc = mq_timedreceive(mq->mq, buffer, len, NULL, &tm);
 
       if(rc>0){
           break;
