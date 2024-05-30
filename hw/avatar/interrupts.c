@@ -13,7 +13,7 @@
 #include "hw/avatar/interrupts.h"
 #include "hw/avatar/avatar_posix.h"
 #include "hw/avatar/remote_memory.h"
-
+#include "hw/intc/armv7m_nvic.h"
 
 
 extern  QemuAvatarMessageQueue *rmem_rx_queue_ref;
@@ -28,6 +28,15 @@ static uint8_t ignore_irq_return_map[32] = {0};
 
 static bool armv7m_exception_handling_enabled = false;
 
+void qmp_avatar_armv7m_ignore_irq_return(int64_t num_irq, Error **errp);
+void qmp_avatar_armv7m_set_vector_table_base(int64_t num_cpu, int64_t base, Error **errp);
+void qmp_avatar_armv7m_enable_irq(const char *irq_rx_queue_name,
+                                  const char *irq_tx_queue_name,
+                                  const char *rmem_rx_queue_name,
+                                  const char *rmem_tx_queue_name, Error **errp);
+void qmp_avatar_armv7m_unignore_irq_return(int64_t num_irq, Error **errp);
+void qmp_avatar_armv7m_inject_irq(int64_t num_cpu,int64_t num_irq, Error **errp);
+void qmp_avatar_armv7m_disable_irq(Error **errp);
 
 
 void qmp_avatar_armv7m_set_vector_table_base(int64_t num_cpu, int64_t base, Error **errp)
@@ -102,6 +111,7 @@ void qmp_avatar_armv7m_disable_irq(Error **errp)
     armv7m_exception_handling_enabled = false;
 
 }
+
 
 
 void qmp_avatar_armv7m_ignore_irq_return(int64_t num_irq, Error **errp)
