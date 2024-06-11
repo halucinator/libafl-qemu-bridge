@@ -766,7 +766,7 @@ static void configurable_machine_class_init(ObjectClass *oc, void *data)
                                           "Configuration file (.json) used to build machine");
 
 #ifdef TARGET_ARM
-    mc->default_cpu_type = "arm926";
+    mc->default_cpu_type = ARM_CPU_TYPE_NAME("arm926");;
 #elif defined(TARGET_AARCH64)
     mc->default_cpu_type = "cortex-a57";
 #elif defined(TARGET_I386)
