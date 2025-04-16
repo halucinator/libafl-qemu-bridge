@@ -95,7 +95,7 @@ struct ConfigurableMachineState {
 static QDict * load_configuration(const char * filename)
 {
     int file = open(filename, O_RDONLY);
-    off_t filesize = lseek(file, 0, SEEK_END);
+    size_t filesize = lseek(file, 0, SEEK_END);
     char * filedata = NULL;
     ssize_t err;
     Error * qerr = NULL;
