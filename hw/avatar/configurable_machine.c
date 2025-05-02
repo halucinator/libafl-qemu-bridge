@@ -542,6 +542,26 @@ static THISCPU *create_cpu(MachineState * ms, QDict *conf)
 
         cpuu = ARM_CPU(first_cpu);
 
+    // same with armv8m cpus
+    } else if (!strcmp(cpu_type, "cortex-m33")) {
+
+        if (qdict_haskey(conf, "num_irq")) {
+            num_irq = qdict_get_int(conf, "num_irq");
+            g_assert(num_irq);
+        }
+        sysclk = clock_new(OBJECT(ms), "SYSCLK");
+        clock_set_hz(sysclk, SYSCLK_FRQ);
+        dstate = qdev_new(TYPE_ARMV7M);
+        qdev_prop_set_uint32(dstate, "num-irq", num_irq);
+        qdev_prop_set_string(dstate, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m33"));
+        qdev_connect_clock_in(dstate, "cpuclk", sysclk);
+        object_property_set_link(OBJECT(dstate), "memory",
+                                 OBJECT(get_system_memory()), &error_abort);
+
+        sysbus_realize_and_unref(SYS_BUS_DEVICE(dstate), &error_fatal);
+
+        cpuu = ARM_CPU(first_cpu);
+
     } else {
 #endif  /* ! TARGET_AARCH64 */
         cpu_oc = cpu_class_by_name(TYPE_ARM_CPU, cpu_type);
