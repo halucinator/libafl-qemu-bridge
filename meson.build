@@ -256,6 +256,7 @@ have_ga = get_option('guest_agent') \
            error_message: 'unsupported OS for QEMU guest agent') \
   .allowed()
 have_block = have_system or have_tools
+have_avatar = 'CONFIG_AVATAR' in config_host
 
 enable_modules = get_option('modules') \
   .require(host_os != 'windows',
@@ -4235,7 +4236,7 @@ foreach target : target_dirs
 
   target_common = common_ss.apply(config_target, strict: false)
   objects = common_all.extract_objects(target_common.sources())
-  arch_deps += target_common.dependencies()
+  deps = target_common.dependencies()
 
   target_specific = specific_ss.apply(config_target, strict: false)
   arch_srcs += target_specific.sources()
@@ -4317,37 +4318,42 @@ foreach target : target_dirs
     if host_os == 'darwin'
       exe_name += '-unsigned'
     endif
-
-#### --- Begin LibAFL code ---
-  if 'AS_SHARED_LIB' not in config_host and 'AS_STATIC_LIB' not in config_host
-#### --- End LibAFL code ---
-    emulator = executable(exe_name, exe['sources'],
-               install: true,
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'],
-               objects: lib.extract_all_objects(recursive: true),
-               link_depends: [block_syms, qemu_syms],
-               link_args: link_args,
-               win_subsystem: exe['win_subsystem'])
-#### --- Begin LibAFL code ---
-  else
-    if 'AS_SHARED_LIB' in config_host
-      emulator = shared_library(exe_name, exe['sources'],
-               install: true,
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'],
-               objects: lib.extract_all_objects(recursive: true),
-               link_depends: [block_syms, qemu_syms],
-               link_args: link_args)
+    
+    if have_avatar
+      # To link the configurable machine with mqueue.h
+      link_args += ['-lrt']
     endif
-    if 'AS_STATIC_LIB' in config_host
-      emulator = static_library(exe_name, exe['sources'],
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'],
-               objects: lib.extract_all_objects(recursive: true))
+    
+    #### --- Begin LibAFL code ---
+    if 'AS_SHARED_LIB' not in config_host and 'AS_STATIC_LIB' not in config_host
+    #### --- End LibAFL code ---
+        emulator = executable(exe_name, exe['sources'],
+                   install: true,
+                   c_args: c_args,
+                   dependencies: arch_deps + deps + exe['dependencies'],
+                   objects: lib.extract_all_objects(recursive: true),
+                   link_depends: [block_syms, qemu_syms],
+                   link_args: link_args,
+                   win_subsystem: exe['win_subsystem'])
+    #### --- Begin LibAFL code ---
+    else
+        if 'AS_SHARED_LIB' in config_host
+            emulator = shared_library(exe_name, exe['sources'],
+                   install: true,
+                   c_args: c_args,
+                   dependencies: arch_deps + deps + exe['dependencies'],
+                   objects: lib.extract_all_objects(recursive: true),
+                   link_depends: [block_syms, qemu_syms],
+                   link_args: link_args)
+        endif
+        if 'AS_STATIC_LIB' in config_host
+            emulator = static_library(exe_name, exe['sources'],
+                   c_args: c_args,
+                   dependencies: arch_deps + deps + exe['dependencies'],
+                   objects: lib.extract_all_objects(recursive: true))
+        endif
     endif
-  endif
-#### --- End LibAFL code ---
+    #### --- End LibAFL code ---
     if host_os == 'darwin'
       icon = 'pc-bios/qemu.rsrc'
       build_input = [emulator, files(icon)]
@@ -4614,6 +4620,7 @@ summary_info += {'vhost-user-crypto support': have_vhost_user_crypto}
 summary_info += {'vhost-user-blk server support': have_vhost_user_blk_server}
 summary_info += {'vhost-vdpa support': have_vhost_vdpa}
 summary_info += {'build guest agent': have_ga}
+summary_info += {'avatar2 support': config_host.has_key('CONFIG_AVATAR')}
 summary(summary_info, bool_yn: true, section: 'Configurable features')
 
 # Compilation information

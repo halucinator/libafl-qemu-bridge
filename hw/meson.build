@@ -48,6 +48,7 @@ subdir('fsi')
 
 subdir('alpha')
 subdir('arm')
+subdir('avatar')
 subdir('avr')
 subdir('hppa')
 subdir('i386')

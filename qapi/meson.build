@@ -74,6 +74,12 @@ if have_system or have_tools
   ]
 endif
 
+if have_avatar
+  qapi_all_modules += [
+    'avatar-target',
+  ]
+endif
+
 qapi_nonmodule_outputs = [
   'qapi-introspect.c', 'qapi-introspect.h',
   'qapi-types.c', 'qapi-types.h',

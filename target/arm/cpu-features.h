@@ -20,6 +20,7 @@
 #ifndef TARGET_ARM_FEATURES_H
 #define TARGET_ARM_FEATURES_H
 
+#include "cpu.h"
 #include "hw/registerfields.h"
 #include "qemu/host-utils.h"
 

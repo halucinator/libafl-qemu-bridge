@@ -10201,10 +10201,10 @@ static void take_aarch32_exception(CPUARMState *env, int new_mode,
          * this is a lie, as there was no c1_sys on V4T/V5, but who cares
          * and we should just guard the thumb mode on V4
          */
-        if (arm_feature(env, ARM_FEATURE_V4T)) {
-            env->thumb =
-                (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_TE) != 0;
-        }
+        // if (arm_feature(env, ARM_FEATURE_V4T)) {
+        //     env->thumb =
+        //         (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_TE) != 0;
+        // }
         env->regs[14] = env->regs[15] + offset;
     }
     env->regs[15] = newpc;

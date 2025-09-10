@@ -256,6 +256,7 @@ skip_meson=no
 use_containers="yes"
 rust="disabled"
 rust_target_triple=""
+avatar=yes
 gdb_bin=$(command -v "gdb-multiarch" || command -v "gdb")
 gdb_arches=""
 
@@ -366,6 +367,7 @@ else
   # be the result of a missing compiler.
   host_os=bogus
 fi
+echo "recognized host_os '$host_os'"
 
 if test ! -z "$cpu" ; then
   # command line argument
@@ -784,6 +786,10 @@ for opt do
   --enable-rust) rust=enabled
   ;;
   --disable-rust) rust=disabled
+  ;;
+  --enable-avatar) avatar=yes
+  ;;
+  --disable-avatar) avatar=no
   ;;
 #### --- Begin LibAFL code ---
   --as-shared-lib)
@@ -1789,6 +1795,10 @@ echo "EXESUF=$EXESUF" >> $config_host_mak
 if test "$default_targets" = "yes"; then
   echo "CONFIG_DEFAULT_TARGETS=y" >> $config_host_mak
 fi
+if test "$avatar" = "yes"; then
+    echo "CONFIG_AVATAR=y" >> $config_host_mak
+fi
+
 
 #### --- Begin LibAFL code ---
 if test "$as_shared_lib" = "yes" ; then
